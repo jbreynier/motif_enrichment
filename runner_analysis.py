@@ -11,12 +11,11 @@ import graphs
 def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-                                "i:o:f:l:g:e:m:a:t:s:r:F:A:h",
+                                "i:o:f:l:e:m:a:t:s:r:F:A:h",
                                 ["input_dir=",
                                     "output_dir=",
                                     "genome_fasta=",
                                     "genome_len=",
-                                    "genome_gaps=",
                                     "genome_include=",
                                     "motif_path=",
                                     "sample_attr=",
@@ -40,7 +39,6 @@ def main():
     sample_attr_path = None
     genome_fasta = None
     genome_len = None
-    genome_gaps = None
     genome_include = None
 
     for opt, arg in opts:
@@ -55,8 +53,6 @@ def main():
             genome_fasta = arg
         elif opt in ("-l", "--genome_len"):
             genome_len = arg
-        elif opt in ("-g", "--genome_gaps"):
-            genome_gaps = arg
         elif opt in ("-e", "--genome_include"):
             genome_include = arg
         elif opt in ("-m", "--motif_path"):
@@ -85,9 +81,6 @@ def main():
         raise exceptions.MissingArgumentError(message)
     if genome_len is None:
         message = "Error: you must indicate --genome_len."
-        raise exceptions.MissingArgumentError(message)
-    if genome_gaps is None:
-        message = "Error: you must indicate --genome_gaps."
         raise exceptions.MissingArgumentError(message)
     if genome_include is None:
         message = "Error: you must indicate --genome_include."

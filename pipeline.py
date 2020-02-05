@@ -121,7 +121,6 @@ class MotifPipeline:
                 for attr in self.sample_attr[group]:
                     list_bedpe += df_attr[df_attr[group] == attr][df_attr.columns[0]].tolist()
             self.list_bedpe = list(set(list_bedpe))
-            print(self.list_bedpe)
     
     def write_description(self):
         file_prefix = self.output_dir + self.string_name()
