@@ -17,7 +17,7 @@ def main():
                                     "genome_fasta=",
                                     "genome_len=",
                                     "genome_gaps=",
-                                    "genome_exclude=",
+                                    "genome_include=",
                                     "motif_path=",
                                     "sample_attr=",
                                     "sampleinfo_table=",
@@ -41,7 +41,7 @@ def main():
     genome_fasta = None
     genome_len = None
     genome_gaps = None
-    genome_exclude = None
+    genome_include = None
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
@@ -57,8 +57,8 @@ def main():
             genome_len = arg
         elif opt in ("-g", "--genome_gaps"):
             genome_gaps = arg
-        elif opt in ("-e", "--genome_exclude"):
-            genome_exclude = arg
+        elif opt in ("-e", "--genome_include"):
+            genome_include = arg
         elif opt in ("-m", "--motif_path"):
             motif_pipeline.set_motif_path(arg)
         elif opt in ("-a", "--sample_attr"):
@@ -89,8 +89,8 @@ def main():
     if genome_gaps is None:
         message = "Error: you must indicate --genome_gaps."
         raise exceptions.MissingArgumentError(message)
-    if genome_exclude is None:
-        message = "Error: you must indicate --genome_exclude."
+    if genome_include is None:
+        message = "Error: you must indicate --genome_include."
         raise exceptions.MissingArgumentError(message)
     for pipeline_attr in ["input_dir",
                             "output_dir",
@@ -105,7 +105,7 @@ def main():
             raise exceptions.MissingArgumentError(message)
     motif_pipeline.write_description()
     motif_pipeline.set_list_bedpe(sample_attr_path)
-    reference_genome = refgenome.ReferenceGenome(genome_fasta, genome_len, genome_gaps, genome_exclude)
+    reference_genome = refgenome.ReferenceGenome(genome_fasta, genome_len, genome_include)
     extractdata.bedpe_to_bed(reference_genome, motif_pipeline)
     motif_pipeline.set_num_SV_breakpoints()
     runprogram.bedtools(motif_pipeline, reference_genome)

@@ -31,7 +31,10 @@ def bedpe_to_bed(genome, motif_pipeline):
                                 df_include_chrom = df_include_intervals[df_include_intervals["chrom"] == chrom]
                                 start = int(row["start" + index]) - 50
                                 end = int(row["start" + index]) + 50
-                                if not df_include_chrom.apply(lambda x: x["start"] <= start and x["end"] >= end, axis=1).any():
+                                if df_include_chrom.apply(lambda x: x["start"] <= start and x["end"] >= end, axis=1).any():
+                                    # print("Included:")
+                                    # print(start, end)
+                                    # print(df_include_chrom.loc[(df_include_chrom["start"] <= start) & (df_include_chrom["end"] >= end)])
                                     list_rows_sv.append([row["chrom" + index],
                                         str(start),
                                         str(end),
@@ -55,6 +58,10 @@ def bedpe_to_bed(genome, motif_pipeline):
                                             "100",
                                             row["strand" + index]
                                         ])
+                                # else:
+                                    # print("Not included:")
+                                    # print(df_include_chrom.loc[(df_include_chrom["start"] <= start)].iloc[[-1]])
+                                    # print(start, end)
                     writer_sv.writerows(list_rows_sv)
                     writer_rand.writerows(list_rows_rand)
 
