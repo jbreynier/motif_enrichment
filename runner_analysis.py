@@ -9,6 +9,7 @@ import runprogram
 import graphs
 
 def main():
+    '''Reads input from terminal and coordinates pipeline'''
     try:
         opts, args = getopt.getopt(sys.argv[1:],
                                 "i:o:f:l:e:m:a:t:s:r:F:A:h",
@@ -110,18 +111,21 @@ def main():
     graphs.generate_histogram(motif_pipeline)
 
 def description():
-    manual = ("\nOPTIONS:\n\t -h or --help : display the manual\n"
-        "\t -d or --g_dir : specify the genome directory path\n"
-        "\t -f or --g_fa: specify the hg19 genome fasta file path\n"
-        "\t -g or --g_gtf : specify the hg19 genome GTF file path\n"
-        "\t -r or --r1r2_dir : specify the fastq directory for the sample\n"
-        "\t -a or --align_dir : specify the directory of "
-        "the aligned bam file\n"
-        "\t -o or --out : specify the final output directory for TRUST\n"
-        "\t -p or --param : specify additional parameters for TRUST\n"
-        "\t -s or --log_suffix : specify suffix for log file name\n"  
-        "\t -l or --loop : input for -r/--r1r2_dir and -a/--align_dir \n"
-        "\t are directories containing different samples to loop over\n"
+    '''Prints description of pipeline usage'''
+    manual = ("\nOPTIONS:\n\t -h or --help : display the manual and exit\n"
+        "\t -i or --input_dir : specify the directory path containing all the input bedpe files\n"
+        "\t -o or --output_dir : specify the directory for all output files\n"
+        "\t -f or --genome_fasta: specify the genome fasta file path\n"
+        "\t -l or --genome_len : specify the chromosome length file path\n"
+        "\t -e or --genome_include : specify the file path of the genome regions to include\n"
+        "\t -m or --motif_path : specify the path of the MEME motif file\n"
+        "\t -a or --sample_attr : specify the sample attribute(s) to select for "
+        "[format: < attribute_type:specific_attribute,attribute_type:specific_attribute >]\n"
+        "\t -t or --sampleinfo_table : specify the sample attribute table file path\n"
+        "\t -s or --SV_types : specify SV type(s) [format: < tra,inv,del,dup >]\n"
+        "\t -r or --rand_sv_ratio : specify the ratio of random SVs to real SVs [format: < num_rand:num_realSV >]\n"
+        "\t -F or --FIMO_thresh : specify the p-value threshold for the FIMO algorithm\n"
+        "\t -A or --AME_scoring : specify the scoring method for AME [either < avg > or < max >]\n"
         )
     print(manual)
 
