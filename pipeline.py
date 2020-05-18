@@ -13,14 +13,14 @@ class MotifPipeline:
         return(now.strftime("%m/%d/%Y, %H:%M:%S"))
 
     def write_log(self, message):
-        with open(self.output_dir + "log.txt", "a+") as log:
+        with open(self.subdir_name + "log.txt", "a+") as log:
             log.write(self.time_stamp() + ":  " + message + "\n")
 
     def string_name(self):
         return self.output_dir.split("/")[-2]
     
     def set_num_SV_breakpoints(self):
-        file_path = self.output_dir + self.string_name() + "_sv.bed"
+        file_path = self.subdir_name + self.string_name() + "_sv.bed"
         if not os.path.isfile(file_path):
             message = ("Error: the following file path <{path}> "
                     "is missing").format(path=file_path)
@@ -122,8 +122,16 @@ class MotifPipeline:
                     list_bedpe += df_attr[df_attr[group] == attr][df_attr.columns[0]].tolist()
             self.list_bedpe = list(set(list_bedpe))
     
+    def set_subdir_name(self):
+        subdir_name = str(self.sample_attr) + "_" + str(self.SV_types) + "_" + str(self.rand_sv_ratio)
+        subdir_name = subdir_name.replace("'","").replace(" ", "").replace(",", "+").replace("[", "").replace("]", "").replace(":", "-")
+        subdir_name += "_" + "AME-" + self.AME_scoring + "FIMO-" + self.FIMO_thresh
+        self.subdir_name = self.output_dir + subdir_name + "/"
+        if not os.path.isdir(self.subdir_name):
+            os.mkdir(self.subdir_name)
+    
     def write_description(self):
-        file_prefix = self.output_dir + self.string_name()
+        file_prefix = self.subdir_name + self.string_name()
         with open(file_prefix + "_results_summary.txt", "a+") as summary:
             summary.write("Summary of results:\n\n")
             summary.write("SV types: {sv_types}\n".format(sv_types=str(self.SV_types)))

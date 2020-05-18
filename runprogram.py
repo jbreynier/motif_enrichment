@@ -6,7 +6,8 @@ import pipeline
 import refgenome
 
 def bedtools(motif_pipeline, genome):
-    file_prefix = motif_pipeline.output_dir + motif_pipeline.string_name()
+    '''Extract fasta sequences from genome using bedtools'''
+    file_prefix = motif_pipeline.subdir_name + motif_pipeline.string_name()
     for file_path in [file_prefix + "_rand.bed", file_prefix + "_sv.bed"]:
         if not os.path.isfile(file_path):
             message = ("Error: the following file path <{path}> "
@@ -31,8 +32,30 @@ def bedtools(motif_pipeline, genome):
             print("An error occurred, the program did not run to completion.")
             sys.exit()
 
+def merge(motif_pipeline):
+    '''Merge all the random/normal SV breakpoint files'''
+    list_concat_sv = []
+    list_concat_rand = []
+    for file_name in motif_pipeline.list_bedpe:
+        for sv_type in motif_pipeline.SV_types:
+            sv_bed = motif_pipeline.output_dir + "bed_files/" + file_name + "_" + sv_type + "_sv.bed"
+            rand_bed = motif_pipeline.output_dir + "bed_files/" + file_name + "_" + sv_type + "_rand" + str(motif_pipeline.rand_sv_ratio) + ".bed"
+            if os.path.isfile(sv_bed):
+                list_concat_sv.append(sv_bed)
+            if os.path.isfile(rand_bed):
+                list_concat_rand.append(rand_bed)
+    with open(motif_pipeline.subdir_name + motif_pipeline.string_name() + "_rand.bed", 'w') as out_rand:
+        for rand_path in list_concat_rand:
+            with open(rand_path) as rand_file:
+                out_rand.write(rand_file.read())
+    with open(motif_pipeline.subdir_name + motif_pipeline.string_name() + "_sv.bed", 'w') as out_sv:
+        for sv_path in list_concat_sv:
+            with open(sv_path) as sv_file:
+                out_sv.write(sv_file.read())
+
 def FIMO(motif_pipeline):
-    file_prefix = motif_pipeline.output_dir + motif_pipeline.string_name()
+    '''Runs FIMO (Find Individual Motif Occurrences) program on samples'''
+    file_prefix = motif_pipeline.subdir_name + motif_pipeline.string_name()
     for file_path in [file_prefix + "_rand.fasta", file_prefix + "_sv.fasta"]:
         if not os.path.isfile(file_path):
             message = ("Error: the following file <{path}> "
@@ -40,7 +63,7 @@ def FIMO(motif_pipeline):
             raise exceptions.IncorrectPathError(message)
     for rand_sv in ["rand", "sv"]:
         FIMO_script = ("fimo --oc {output_dir} --thresh {FIMO_thresh} {meme_file} "
-                            "{fasta_file}").format(output_dir=motif_pipeline.output_dir+"FIMO_"+rand_sv,
+                            "{fasta_file}").format(output_dir=motif_pipeline.subdir_name+"FIMO_"+rand_sv,
                                                     meme_file=motif_pipeline.motif_path,
                                                     fasta_file=file_prefix+"_"+rand_sv+".fasta",
                                                     FIMO_thresh=motif_pipeline.FIMO_thresh)
@@ -57,7 +80,8 @@ def FIMO(motif_pipeline):
             sys.exit()
 
 def AME(motif_pipeline):
-    file_prefix = motif_pipeline.output_dir + motif_pipeline.string_name()
+    '''Run AME (Analysis of Motif Enrichment) program on samples'''
+    file_prefix = motif_pipeline.subdir_name + motif_pipeline.string_name()
     for file_path in [file_prefix + "_rand.fasta", file_prefix + "_sv.fasta"]:
         if not os.path.isfile(file_path):
             message = ("Error: the following file path <{path}> "
@@ -66,7 +90,7 @@ def AME(motif_pipeline):
     AME_script = ("ame --verbose 5 --oc {output_dir} "
                     "--scoring {method} "
                     "--control {fasta_rand} "
-                    "{fasta_sv} {meme_file} ").format(output_dir=motif_pipeline.output_dir+"AME",
+                    "{fasta_sv} {meme_file} ").format(output_dir=motif_pipeline.subdir_name+"AME",
                                                     fasta_rand=file_prefix+"_rand.fasta",
                                                     fasta_sv=file_prefix+"_sv.fasta",
                                                     meme_file=motif_pipeline.motif_path,

@@ -2,6 +2,7 @@
 import exceptions
 import pipeline
 import pandas as pd
+import matplotlib as plt
 import rpy2.robjects.lib.ggplot2 as ggplot2
 from rpy2 import robjects
 from rpy2.robjects.packages import importr
@@ -9,6 +10,7 @@ from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
 
 def generate_histogram(motif_pipeline):
+    '''Create histogram using AME ranking of sequences'''
     file_prefix = motif_pipeline.output_dir + motif_pipeline.string_name()
     df_AME_results = pd.read_csv(file_prefix + "_AME_results.csv")
     total_count = df_AME_results.shape[0]

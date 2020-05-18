@@ -14,6 +14,7 @@ class ReferenceGenome:
         self.path_include = genome_include_file
 
 def generate_genome_dict(genome_length_file):
+    '''Create dictionary of reference genome chromosome lengths'''
     length = {}
     with open(genome_length_file, "r") as genome_len:
         reader = csv.DictReader(genome_len, delimiter="\t")

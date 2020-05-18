@@ -1,4 +1,6 @@
 import sys
+import os
+import glob
 import getopt
 import refgenome
 import pipeline
@@ -6,13 +8,16 @@ import exceptions
 import pipeline
 import extractdata
 import runprogram
-import graphs
+import importlib
+import subprocess
+# import graphs
+import parsl
 
 def main():
     '''Reads input from terminal and coordinates pipeline'''
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-                                "i:o:f:l:e:m:a:t:s:r:F:A:h",
+                                "i:o:f:l:e:m:a:t:s:r:F:A:c:h",
                                 ["input_dir=",
                                     "output_dir=",
                                     "genome_fasta=",
@@ -25,6 +30,7 @@ def main():
                                     "rand_sv_ratio=",
                                     "FIMO_thresh=",
                                     "AME_scoring=",
+                                    "config=",
                                     "help"
                                     ]
                                 )
@@ -41,6 +47,7 @@ def main():
     genome_fasta = None
     genome_len = None
     genome_include = None
+    config_name = "local"
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
@@ -70,6 +77,8 @@ def main():
             motif_pipeline.set_FIMO_thresh(arg)
         elif opt in ("-A", "--AME_scoring"):
             motif_pipeline.set_AME_scoring(arg)
+        elif opt in ("-c", "--config"):
+            config_name = arg
         else:
             message = "Error: {opt} is not a valid option".format(opt=opt)
             raise exceptions.WrongArgumentError(message)
@@ -97,10 +106,30 @@ def main():
         if not hasattr(motif_pipeline, pipeline_attr):
             message = ("Error: you must indicate --{attr}.").format(attr=pipeline_attr)
             raise exceptions.MissingArgumentError(message)
+    motif_pipeline.set_subdir_name()
     motif_pipeline.write_description()
     motif_pipeline.set_list_bedpe(sample_attr_path)
     reference_genome = refgenome.ReferenceGenome(genome_fasta, genome_len, genome_include)
-    extractdata.bedpe_to_bed(reference_genome, motif_pipeline)
+    base_dir = '/'.join(os.path.abspath(__file__).split('/')[:-1])
+    try:
+        config = os.path.join(base_dir, 'configs', '{}.py'.format(config_name))
+        spec = importlib.util.spec_from_file_location('', config)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        parsl.load(module.config)
+    except:
+        raise exceptions.IncorrectPathError("Cannot find the config file <{config_name}>.".format(config_name=config_name))
+    
+    if not os.path.isdir(motif_pipeline.output_dir+"bed_files"):
+        os.mkdir(motif_pipeline.output_dir+"bed_files")
+    for file in glob.glob(motif_pipeline.input_dir + "*.bedpe"):
+        file_name = (file.split("/")[-1]).split(".")[0]
+        if file_name in motif_pipeline.list_bedpe:
+            sv_types_to_run = get_SV_types(motif_pipeline, file_name)
+            if sv_types_to_run:
+                extractdata.bedpe_to_bed(reference_genome, motif_pipeline, file_name, sv_types_to_run)                
+    parsl.wait_for_current_tasks()
+    runprogram.merge(motif_pipeline)
     motif_pipeline.set_num_SV_breakpoints()
     runprogram.bedtools(motif_pipeline, reference_genome)
     runprogram.FIMO(motif_pipeline)
@@ -108,7 +137,17 @@ def main():
     extractdata.extract_list_sequences_AME(motif_pipeline)
     extractdata.extract_output_FIMO(motif_pipeline)
     extractdata.extract_output_AME(motif_pipeline)
-    graphs.generate_histogram(motif_pipeline)
+    # graphs.generate_histogram(motif_pipeline)
+
+def get_SV_types(motif_pipeline, sample_name):
+    '''Determines which SV type to run the analysis for for each sample'''
+    sv_types_to_run = []
+    file_prefix = motif_pipeline.output_dir + "bed_files/" + sample_name
+    for sv_type in motif_pipeline.SV_types:
+        if (not os.path.isfile(file_prefix+"_"+sv_type+"_sv.bed") or 
+            not file_prefix+"_"+sv_type+"_rand"+str(motif_pipeline.rand_sv_ratio)+".bed"):
+            sv_types_to_run.append(sv_type)
+    return sv_types_to_run
 
 def description():
     '''Prints description of pipeline usage'''
@@ -126,6 +165,7 @@ def description():
         "\t -r or --rand_sv_ratio : specify the ratio of random SVs to real SVs [format: < num_rand:num_realSV >]\n"
         "\t -F or --FIMO_thresh : specify the p-value threshold for the FIMO algorithm\n"
         "\t -A or --AME_scoring : specify the scoring method for AME [either < avg > or < max >]\n"
+        "\t -c or --config : specify the config file to use for Parsl parallel processing\n"
         )
     print(manual)
 
