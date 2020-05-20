@@ -21,7 +21,7 @@ Scipy: https://www.scipy.org/
 *The user must then activate a previously created conda virtual environment with Python 3, Parsl, Pandas, Scipy and Matplotlib installed, e.g.*  
 `$ module load gcc/6.2.0 perl/5.24.0 zlib/1.2.8 meme/5.0.5 bedtools/2.27.1 R/3.6.1 miniconda3/4.7.10`  
 `$ source activate motifenrichment_env`  
-`(motifenrichment_env)$ python runner_analysis.py <options>`  
+`(motifenrichment_env)$ nohup python runner_analysis.py -c gardner <options> &`  
 
 ## Options:  
 
@@ -38,7 +38,7 @@ Scipy: https://www.scipy.org/
 **`-r` or `--rand_sv_ratio <int>` :** specify the ratio of random SVs to real SVs *[default: 3:1 random to real SVs, e.g. 3]*  
 **`-F` or `--FIMO_thresh <float>` :** specify the p-value threshold for the FIMO algorithm *[default: 0.0001]*  
 **`-A` or `AME_scoring <avg|max>` :** specify the scoring method for AME *[default: max]*  
-**`c` or `--config <filename>` :** specify the config file to use for Parsl parallel processing *[default: local]*  
+**`-c` or `--config <filename>` :** specify the config file to use for Parsl parallel processing *[default: local]*  
 **_NOTE: The paths for all files and directories in the command line should always be absolute paths._**  
 
 ## Input:
@@ -56,9 +56,9 @@ Scipy: https://www.scipy.org/
 
 * `bed_files/` directory: contains all the randomly generated or real breakpoint bed files listing all the 100bp sequences to analyze (with names formated as such `<sample_name>_<sv_type>_sv.bed` for real SVs, and `<samplename>_<SV type>_rand<random to real ratio>.bed`).
 * Results directory (name format: `<attribute column>-<specific attribute>+<attribute column>-<specific attribute>_<SV type>+<SV type>_<random to real ratio>_AME-<AME scoring method>_FIMO-<FIMO threshold>`): contains the following files:
-    * `*_results_summary.txt` file: contains all summary of all the statistical analyses.
+    * `*_results_summary.txt` file: contains summary of all the statistical analyses.
     * `AME/` directory: contains the raw output of the AME algorithm.
     * `FIMO_(rand|sv)/` directory: contains the raw output of the FIMO algorithm for the real or random SV breakpoints.
     * `*_(rand|sv).fasta` and `*_(rand|sv).bed` files: bed and fasta files containing all breakpoint locations or sequences respectively for random and real SVs.
     * `*_AME_results.csv` file: contains the scoring of all SV breakpoints during AME analysis (used to create the plot).
-    * `*_plot_(rand|sv).pdf` file: contains the histogram of the relative rank of AME scores for real or random SV breakpoints.
+    * `*_AME_rank.pdf` file: contains the histograms of the relative rank of AME scores for real or random SV breakpoints.
