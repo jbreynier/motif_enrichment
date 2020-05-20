@@ -7,7 +7,7 @@ import refgenome
 
 def bedtools(motif_pipeline, genome):
     '''Extract fasta sequences from genome using bedtools'''
-    file_prefix = motif_pipeline.subdir_name + motif_pipeline.string_name()
+    file_prefix = motif_pipeline.subdir_name + motif_pipeline.prefix
     for file_path in [file_prefix + "_rand.bed", file_prefix + "_sv.bed"]:
         if not os.path.isfile(file_path):
             message = ("Error: the following file path <{path}> "
@@ -44,25 +44,25 @@ def merge(motif_pipeline):
                 list_concat_sv.append(sv_bed)
             if os.path.isfile(rand_bed):
                 list_concat_rand.append(rand_bed)
-    with open(motif_pipeline.subdir_name + motif_pipeline.string_name() + "_rand.bed", 'w') as out_rand:
+    with open(motif_pipeline.subdir_name + motif_pipeline.prefix + "_rand.bed", 'w') as out_rand:
         for rand_path in list_concat_rand:
             with open(rand_path) as rand_file:
                 out_rand.write(rand_file.read())
-    with open(motif_pipeline.subdir_name + motif_pipeline.string_name() + "_sv.bed", 'w') as out_sv:
+    with open(motif_pipeline.subdir_name + motif_pipeline.prefix + "_sv.bed", 'w') as out_sv:
         for sv_path in list_concat_sv:
             with open(sv_path) as sv_file:
                 out_sv.write(sv_file.read())
 
 def FIMO(motif_pipeline):
     '''Runs FIMO (Find Individual Motif Occurrences) program on samples'''
-    file_prefix = motif_pipeline.subdir_name + motif_pipeline.string_name()
+    file_prefix = motif_pipeline.subdir_name + motif_pipeline.prefix
     for file_path in [file_prefix + "_rand.fasta", file_prefix + "_sv.fasta"]:
         if not os.path.isfile(file_path):
             message = ("Error: the following file <{path}> "
                     "is missing").format(path=file_path)
             raise exceptions.IncorrectPathError(message)
     for rand_sv in ["rand", "sv"]:
-        FIMO_script = ("fimo --oc {output_dir} --thresh {FIMO_thresh} {meme_file} "
+        FIMO_script = ("fimo --oc {output_dir} --thresh {FIMO_thresh} --max-stored-scores 100000000 {meme_file} "
                             "{fasta_file}").format(output_dir=motif_pipeline.subdir_name+"FIMO_"+rand_sv,
                                                     meme_file=motif_pipeline.motif_path,
                                                     fasta_file=file_prefix+"_"+rand_sv+".fasta",
@@ -81,7 +81,7 @@ def FIMO(motif_pipeline):
 
 def AME(motif_pipeline):
     '''Run AME (Analysis of Motif Enrichment) program on samples'''
-    file_prefix = motif_pipeline.subdir_name + motif_pipeline.string_name()
+    file_prefix = motif_pipeline.subdir_name + motif_pipeline.prefix
     for file_path in [file_prefix + "_rand.fasta", file_prefix + "_sv.fasta"]:
         if not os.path.isfile(file_path):
             message = ("Error: the following file path <{path}> "

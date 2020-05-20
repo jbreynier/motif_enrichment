@@ -10,14 +10,14 @@ import extractdata
 import runprogram
 import importlib
 import subprocess
-# import graphs
+import graphs
 import parsl
 
 def main():
     '''Reads input from terminal and coordinates pipeline'''
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-                                "i:o:f:l:e:m:a:t:s:r:F:A:c:h",
+                                "i:o:f:l:e:m:a:t:s:r:F:A:c:p:h",
                                 ["input_dir=",
                                     "output_dir=",
                                     "genome_fasta=",
@@ -31,6 +31,7 @@ def main():
                                     "FIMO_thresh=",
                                     "AME_scoring=",
                                     "config=",
+                                    "prefix=",
                                     "help"
                                     ]
                                 )
@@ -47,6 +48,7 @@ def main():
     genome_fasta = None
     genome_len = None
     genome_include = None
+    prefix = None
     config_name = "local"
 
     for opt, arg in opts:
@@ -79,12 +81,15 @@ def main():
             motif_pipeline.set_AME_scoring(arg)
         elif opt in ("-c", "--config"):
             config_name = arg
+        elif opt in ("-p", "--prefix"):
+            prefix = arg
         else:
             message = "Error: {opt} is not a valid option".format(opt=opt)
             raise exceptions.WrongArgumentError(message)
     
-    if sample_attr_path is None:
-        message = "Error: you must indicate --sampleinfo_table."
+    if (sample_attr_path is None and hasattr(motif_pipeline, "sample_attr") or 
+        sample_attr_path is not None and not hasattr(motif_pipeline, "sample_attr")):
+        message = "Error: you must indicate both --sampleinfo_table and --sample_attr, or neither."
         raise exceptions.MissingArgumentError(message)
     if genome_fasta is None:
         message = "Error: you must indicate --genome_fasta."
@@ -98,7 +103,6 @@ def main():
     for pipeline_attr in ["input_dir",
                             "output_dir",
                             "motif_path",
-                            "sample_attr",
                             "SV_types",
                             "rand_sv_ratio",
                             "FIMO_thresh",
@@ -106,7 +110,7 @@ def main():
         if not hasattr(motif_pipeline, pipeline_attr):
             message = ("Error: you must indicate --{attr}.").format(attr=pipeline_attr)
             raise exceptions.MissingArgumentError(message)
-    motif_pipeline.set_subdir_name()
+    motif_pipeline.set_subdir_name(prefix)
     motif_pipeline.write_description()
     motif_pipeline.set_list_bedpe(sample_attr_path)
     reference_genome = refgenome.ReferenceGenome(genome_fasta, genome_len, genome_include)
@@ -122,12 +126,10 @@ def main():
     
     if not os.path.isdir(motif_pipeline.output_dir+"bed_files"):
         os.mkdir(motif_pipeline.output_dir+"bed_files")
-    for file in glob.glob(motif_pipeline.input_dir + "*.bedpe"):
-        file_name = (file.split("/")[-1]).split(".")[0]
-        if file_name in motif_pipeline.list_bedpe:
-            sv_types_to_run = get_SV_types(motif_pipeline, file_name)
-            if sv_types_to_run:
-                extractdata.bedpe_to_bed(reference_genome, motif_pipeline, file_name, sv_types_to_run)                
+    for file_name in motif_pipeline.list_bedpe:
+        sv_types_to_run = get_SV_types(motif_pipeline, file_name)
+        if sv_types_to_run:
+            extractdata.bedpe_to_bed(reference_genome, motif_pipeline, file_name, sv_types_to_run)
     parsl.wait_for_current_tasks()
     runprogram.merge(motif_pipeline)
     motif_pipeline.set_num_SV_breakpoints()
@@ -137,7 +139,7 @@ def main():
     extractdata.extract_list_sequences_AME(motif_pipeline)
     extractdata.extract_output_FIMO(motif_pipeline)
     extractdata.extract_output_AME(motif_pipeline)
-    # graphs.generate_histogram(motif_pipeline)
+    graphs.generate_histogram(motif_pipeline)
 
 def get_SV_types(motif_pipeline, sample_name):
     '''Determines which SV type to run the analysis for for each sample'''
@@ -145,7 +147,7 @@ def get_SV_types(motif_pipeline, sample_name):
     file_prefix = motif_pipeline.output_dir + "bed_files/" + sample_name
     for sv_type in motif_pipeline.SV_types:
         if (not os.path.isfile(file_prefix+"_"+sv_type+"_sv.bed") or 
-            not file_prefix+"_"+sv_type+"_rand"+str(motif_pipeline.rand_sv_ratio)+".bed"):
+            not os.path.isfile(file_prefix+"_"+sv_type+"_rand"+str(motif_pipeline.rand_sv_ratio)+".bed")):
             sv_types_to_run.append(sv_type)
     return sv_types_to_run
 
@@ -162,10 +164,11 @@ def description():
         "[format: < attribute_type:specific_attribute,attribute_type:specific_attribute >]\n"
         "\t -t or --sampleinfo_table : specify the sample attribute table file path\n"
         "\t -s or --SV_types : specify SV type(s) [format: < tra,inv,del,dup >]\n"
-        "\t -r or --rand_sv_ratio : specify the ratio of random SVs to real SVs [format: < num_rand:num_realSV >]\n"
-        "\t -F or --FIMO_thresh : specify the p-value threshold for the FIMO algorithm\n"
+        "\t -r or --rand_sv_ratio : specify the ratio of random SVs to real SVs [format: < int >]\n"
+        "\t -F or --FIMO_thresh : specify the p-value threshold for the FIMO algorithm [format: < float >]\n"
         "\t -A or --AME_scoring : specify the scoring method for AME [either < avg > or < max >]\n"
         "\t -c or --config : specify the config file to use for Parsl parallel processing\n"
+        "\t -p or --prefix : specify a custom prefix for the results directory and files\n"
         )
     print(manual)
 

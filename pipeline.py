@@ -2,11 +2,14 @@ from datetime import datetime
 import exceptions
 import pandas as pd
 import os
+import glob
 
 class MotifPipeline:
     def __init__(self):
         self.AME_scoring = "max"
         self.FIMO_thresh = "0.0001"
+        self.SV_types = ["inv", "dup", "tra", "del"]
+        self.sample_attr = "all"
     
     def time_stamp(self):
         now = datetime.now()
@@ -16,11 +19,11 @@ class MotifPipeline:
         with open(self.subdir_name + "log.txt", "a+") as log:
             log.write(self.time_stamp() + ":  " + message + "\n")
 
-    def string_name(self):
-        return self.output_dir.split("/")[-2]
+    # def string_name(self):
+    #     return self.output_dir.split("/")[-2]
     
     def set_num_SV_breakpoints(self):
-        file_path = self.subdir_name + self.string_name() + "_sv.bed"
+        file_path = self.subdir_name + self.prefix + "_sv.bed"
         if not os.path.isfile(file_path):
             message = ("Error: the following file path <{path}> "
                     "is missing").format(path=file_path)
@@ -110,28 +113,37 @@ class MotifPipeline:
             raise exceptions.WrongArgumentError(message)
     
     def set_list_bedpe(self, sample_attr_path):
-        if not os.path.isfile(sample_attr_path):
-            message = ("Error: the following file path <{path}> "
-                    "is not correct").format(path=sample_attr_path)
-            raise exceptions.IncorrectPathError(message)
+        if pd.isnull(sample_attr_path):
+            self.list_bedpe = [(file.split("/")[-1]).split(".")[0] for file in glob.glob(self.input_dir + "*.bedpe")]
         else:
-            df_attr = pd.read_csv(sample_attr_path, sep=",")
-            list_bedpe = []
-            for group in self.sample_attr.keys():
-                for attr in self.sample_attr[group]:
-                    list_bedpe += df_attr[df_attr[group] == attr][df_attr.columns[0]].tolist()
-            self.list_bedpe = list(set(list_bedpe))
+            if not os.path.isfile(sample_attr_path):
+                message = ("Error: the following file path <{path}> "
+                        "is not correct").format(path=sample_attr_path)
+                raise exceptions.IncorrectPathError(message)
+            else:
+                df_attr = pd.read_csv(sample_attr_path, sep=",")
+                list_bedpe = []
+                for group in self.sample_attr.keys():
+                    for attr in self.sample_attr[group]:
+                        list_bedpe += df_attr[df_attr[group] == attr][df_attr.columns[0]].tolist()
+                self.list_bedpe = [(file.split("/")[-1]).split(".")[0] for file in glob.glob(self.input_dir + "*.bedpe")
+                                    if (file.split("/")[-1]).split(".")[0] in list_bedpe]
     
-    def set_subdir_name(self):
-        subdir_name = str(self.sample_attr) + "_" + str(self.SV_types) + "_" + str(self.rand_sv_ratio)
-        subdir_name = subdir_name.replace("'","").replace(" ", "").replace(",", "+").replace("[", "").replace("]", "").replace(":", "-")
-        subdir_name += "_" + "AME-" + self.AME_scoring + "FIMO-" + self.FIMO_thresh
-        self.subdir_name = self.output_dir + subdir_name + "/"
+    def set_subdir_name(self, prefix):
+        if prefix:
+            self.prefix = prefix
+            self.subdir_name = self.output_dir + prefix + "/"
+        else:
+            prefix = str(self.sample_attr) + "_" + str(self.SV_types) + "_" + str(self.rand_sv_ratio)
+            prefix = prefix.replace("'","").replace(" ", "").replace(",", "+").replace("[", "").replace("]", "").replace(":", "-").replace("{", "").replace("}", "")
+            prefix += "_AME-" + self.AME_scoring + "_FIMO-" + self.FIMO_thresh
+            self.prefix = prefix
+            self.subdir_name = self.output_dir + prefix + "/"
         if not os.path.isdir(self.subdir_name):
             os.mkdir(self.subdir_name)
     
     def write_description(self):
-        file_prefix = self.subdir_name + self.string_name()
+        file_prefix = self.subdir_name + self.prefix
         with open(file_prefix + "_results_summary.txt", "a+") as summary:
             summary.write("Summary of results:\n\n")
             summary.write("SV types: {sv_types}\n".format(sv_types=str(self.SV_types)))

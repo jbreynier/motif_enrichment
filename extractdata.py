@@ -77,19 +77,19 @@ def bedpe_to_bed(genome, motif_pipeline, sample_name, SV_types):
                                 row["strand" + index]
                             ])
     for sv_type in SV_types:
-        if dict_output_sv[sv_type]:
-            sv_path = file_prefix+"_"+sv_type+"_sv.bed"
-            rand_path = file_prefix+"_"+sv_type+"_rand"+str(motif_pipeline.rand_sv_ratio)+".bed"
-            with open(sv_path, "w") as output_sv, open(rand_path, "w") as output_rand:
-                writer_sv = csv.writer(output_sv, delimiter='\t')
-                writer_rand = csv.writer(output_rand, delimiter='\t')
-                writer_sv.writerows(dict_output_sv[sv_type])
-                writer_rand.writerows(dict_output_rand[sv_type])
+        sv_path = file_prefix+"_"+sv_type+"_sv.bed"
+        rand_path = file_prefix+"_"+sv_type+"_rand"+str(motif_pipeline.rand_sv_ratio)+".bed"
+        with open(sv_path, "w") as output_sv, open(rand_path, "w") as output_rand:
+            writer_sv = csv.writer(output_sv, delimiter='\t')
+            writer_rand = csv.writer(output_rand, delimiter='\t')
+            writer_sv.writerows(dict_output_sv[sv_type])
+            writer_rand.writerows(dict_output_rand[sv_type])
 
 def extract_list_sequences_AME(motif_pipeline):
     '''Extract ranked list of matches from AME error log'''
+    print("extracting AME csv")
     list_data = []
-    file_prefix = motif_pipeline.subdir_name + motif_pipeline.string_name()
+    file_prefix = motif_pipeline.subdir_name + motif_pipeline.prefix
     with open(file_prefix + "_AME_results.csv", "r") as results_file:
             line = results_file.readline()
             while line:
@@ -106,6 +106,7 @@ def extract_list_sequences_AME(motif_pipeline):
 
 def extract_output_FIMO(motif_pipeline):
     '''Extract results from FIMO output'''
+    print("extracting FIMO")
     df_results_sv = pd.read_csv(motif_pipeline.subdir_name + "FIMO_sv/fimo.tsv", sep="\t")
     df_results_rand = pd.read_csv(motif_pipeline.subdir_name + "FIMO_rand/fimo.tsv", sep="\t")
     significant_sv = df_results_sv["sequence_name"].nunique()
@@ -114,15 +115,16 @@ def extract_output_FIMO(motif_pipeline):
                             motif_pipeline.num_SV_breakpoints * (motif_pipeline.rand_sv_ratio + 1),
                             significant_sv + significant_rand,
                             motif_pipeline.num_SV_breakpoints)
-    file_prefix = motif_pipeline.subdir_name + motif_pipeline.string_name()
+    file_prefix = motif_pipeline.subdir_name + motif_pipeline.prefix
     with open(file_prefix + "_results_summary.txt", "a+") as summary:
         summary.write("Hyper-geometric test of FIMO results:\n")
         summary.write("p-value: " + str(results_hypergeom) + "\n")
 
 def extract_output_AME(motif_pipeline):
     '''Extract results from AME output'''
+    print("extracting AME output")
     df_results_AME = pd.read_csv(motif_pipeline.subdir_name + "AME/ame.tsv", sep="\t", comment="#")
-    file_prefix = motif_pipeline.subdir_name + motif_pipeline.string_name()
+    file_prefix = motif_pipeline.subdir_name + motif_pipeline.prefix
     with open(file_prefix + "_results_summary.txt", "a+") as summary:
         summary.write("One-tailed Wilcoxon rank-sum test of AME results:\n")
         summary.write("p-value: " + str(df_results_AME["p-value"].iloc[0]) + "\n")
