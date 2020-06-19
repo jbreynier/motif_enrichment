@@ -87,8 +87,8 @@ def main():
             message = "Error: {opt} is not a valid option".format(opt=opt)
             raise exceptions.WrongArgumentError(message)
     
-    if (sample_attr_path is None and hasattr(motif_pipeline, "sample_attr") or 
-        sample_attr_path is not None and not hasattr(motif_pipeline, "sample_attr")):
+    if ((sample_attr_path is None and not motif_pipeline.sample_attr == "all") or 
+        (sample_attr_path is not None and motif_pipeline.sample_attr == "all")):
         message = "Error: you must indicate both --sampleinfo_table and --sample_attr, or neither."
         raise exceptions.MissingArgumentError(message)
     if genome_fasta is None:
@@ -102,11 +102,7 @@ def main():
         raise exceptions.MissingArgumentError(message)
     for pipeline_attr in ["input_dir",
                             "output_dir",
-                            "motif_path",
-                            "SV_types",
-                            "rand_sv_ratio",
-                            "FIMO_thresh",
-                            "AME_scoring"]:
+                            "motif_path"]:
         if not hasattr(motif_pipeline, pipeline_attr):
             message = ("Error: you must indicate --{attr}.").format(attr=pipeline_attr)
             raise exceptions.MissingArgumentError(message)

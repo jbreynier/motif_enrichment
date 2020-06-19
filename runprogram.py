@@ -89,6 +89,7 @@ def AME(motif_pipeline):
             raise exceptions.IncorrectPathError(message)
     AME_script = ("ame --verbose 5 --oc {output_dir} "
                     "--scoring {method} "
+                    "-- method ranksum "
                     "--control {fasta_rand} "
                     "{fasta_sv} {meme_file} ").format(output_dir=motif_pipeline.subdir_name+"AME",
                                                     fasta_rand=file_prefix+"_rand.fasta",
